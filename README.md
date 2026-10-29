@@ -72,3 +72,13 @@ scripts/  seed.js, e2e.js, build.js (static build for Vercel)
 - An individual occurrence can be moved by at most 31 days.
 - If an entire-series edit changes the weekdays, exceptions on dates that are no longer in the pattern stop applying.
 - The every-other-week phase is anchored to the Sunday-starting week of the series start date.
+
+## Excel version (no server)
+
+`excel/Nurse-Schedule.xlsx` is a stand-alone version for Microsoft 365 Excel, desktop or web. It runs on formulas only, with no macros, add-ins or outside services. Save it to OneDrive or SharePoint to share it.
+
+- **Inputs:** Setup (nurses, facilities, optional staffing requirements), Shifts (one-time assignments and coverage), Recurring (weekly / every other week / every N weeks; end date, occurrence count or open-ended), and Changes (cancel or change one date, release a date for coverage, change everything from a date onward).
+- **Views:** Calendar (month grid with facility and nurse filters), Agenda (sorted list), and Attention (unfilled time and unmet requirements).
+- **Limits:** recurring dates are calculated for the six weeks shown on the Calendar; all times are in one timezone; requirements are checked every 30 minutes.
+
+To rebuild it, run `python3 excel/build_workbook.py` (needs `openpyxl`). Add `--empty` to leave out the example rows.
