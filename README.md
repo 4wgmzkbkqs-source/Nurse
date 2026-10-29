@@ -21,16 +21,15 @@ Environment variables:
 | `PORT` | `3000` | HTTP port |
 | `DATABASE_URL` or `POSTGRES_URL` | unset | Postgres connection string. When set, it is used instead of SQLite |
 | `DB_FILE` | `data/schedule.db` | SQLite database file |
-| `APP_USER`, `APP_PASSWORD` | unset | When both are set, the app asks for this username and password. Required on Vercel |
+| `APP_USER`, `APP_PASSWORD` | unset | Optional. When both are set, the app asks for this username and password |
 
 ## Deploying to Vercel (with Supabase)
 
 1. In Vercel, choose **Add New → Project** and import this GitHub repository. Leave the build settings alone: `vercel.json` supplies them.
 2. In the project's **Storage** tab, create or connect a **Supabase** database. This adds `POSTGRES_URL` and related variables to the project.
-3. In **Settings → Environment Variables**, add `APP_USER` and `APP_PASSWORD`. Anyone with the URL can reach the site, so the app returns an error until both are set.
-4. Redeploy. On the first request the app creates its tables in a separate `nurse_schedule` schema. That schema is not exposed through Supabase's public data API.
+3. Redeploy. On the first request the app creates its tables in a separate `nurse_schedule` schema. That schema is not exposed through Supabase's public data API.
 
-Open the deployment URL, sign in with `APP_USER` / `APP_PASSWORD`, and add your facilities and nurses. To load demo data instead, run `POSTGRES_URL=... npm run seed` once from your computer.
+Open the deployment URL and add your facilities and nurses. No sign-in is required: anyone with the URL can view and edit the schedule. To require a shared username and password, add `APP_USER` and `APP_PASSWORD` under **Settings → Environment Variables** and redeploy. To load demo data instead, run `POSTGRES_URL=... npm run seed` once from your computer.
 
 How it works: `npm run build` copies `public/` and `shared/` into `dist/`, which Vercel serves as static files. Every `/api/*` request is routed to the single function in `api/index.js`.
 
@@ -69,7 +68,7 @@ scripts/  seed.js, e2e.js, build.js (static build for Vercel)
 
 ## Limitations
 
-- Built for a single team. Access is one shared username and password (`APP_USER` / `APP_PASSWORD`); there are no per-user accounts or roles. The sign-in lasts for the browser session.
+- Built for a single team. By default there is no sign-in; optionally, one shared username and password (`APP_USER` / `APP_PASSWORD`). There are no per-user accounts or roles.
 - An individual occurrence can be moved by at most 31 days.
 - If an entire-series edit changes the weekdays, exceptions on dates that are no longer in the pattern stop applying.
 - The every-other-week phase is anchored to the Sunday-starting week of the series start date.

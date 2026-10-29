@@ -54,12 +54,12 @@ function requireDate(v, name) {
   return v;
 }
 
-// HTTP Basic credentials, required when APP_USER / APP_PASSWORD are set.
-// On Vercel the app is public, so it refuses to serve data without them.
+// Optional HTTP Basic credentials, required only when APP_USER and
+// APP_PASSWORD are both set.
 function authState(req) {
   const user = process.env.APP_USER;
   const pass = process.env.APP_PASSWORD;
-  if (!user || !pass) return process.env.VERCEL ? 'unconfigured' : 'ok';
+  if (!user || !pass) return 'ok';
   const h = req.headers.authorization || '';
   if (!h.startsWith('Basic ')) return 'denied';
   const given = Buffer.from(h.slice(6), 'base64');
@@ -145,12 +145,8 @@ export function createApp(storeOrPromise) {
         if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, { error: 'Method not allowed' });
         return await serveStatic(pathname, res);
       }
-      const auth = authState(req);
-      if (auth === 'unconfigured') {
-        return send(res, 503, { error: 'Set APP_USER and APP_PASSWORD in the Vercel project settings, then redeploy.', code: 'auth_unconfigured' });
-      }
       // No WWW-Authenticate header: the page shows its own sign-in form.
-      if (auth === 'denied') return send(res, 401, { error: 'Sign in required.', code: 'auth_required' });
+      if (authState(req) === 'denied') return send(res, 401, { error: 'Sign in required.', code: 'auth_required' });
       for (const r of routes) {
         if (r.method !== req.method) continue;
         const m = r.pattern.exec(pathname);
