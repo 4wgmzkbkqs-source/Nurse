@@ -1,0 +1,20 @@
+{
+  "name": "nurse-schedule",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Nursing schedule and coverage calendar",
+  "type": "module",
+  "engines": {
+    "node": "22.x"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server/index.js",
+    "seed": "node --disable-warning=ExperimentalWarning scripts/seed.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js",
+    "test:e2e": "node --disable-warning=ExperimentalWarning scripts/e2e.js",
+    "build": "node scripts/build.js"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  }
+}

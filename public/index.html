@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Nurse Schedule</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='3' fill='%232563eb'/><path d='M7 3h2v4h4v2H9v4H7V9H3V7h4z' fill='white'/></svg>">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">Nurse Schedule</div>
+    <div class="nav">
+      <button class="btn" data-action="today">Today</button>
+      <button class="btn icon" data-action="prev" aria-label="Previous">‹</button>
+      <button class="btn icon" data-action="next" aria-label="Next">›</button>
+      <h1 id="title" class="title"></h1>
+      <input type="date" id="jump" class="jump" aria-label="Go to date">
+    </div>
+    <div class="views" role="tablist" aria-label="Calendar view">
+      <button class="seg" data-view="month" role="tab">Month</button>
+      <button class="seg" data-view="week" role="tab">Week</button>
+      <button class="seg" data-view="agenda" role="tab">Agenda</button>
+    </div>
+    <div class="filters">
+      <select id="filter-facility" aria-label="Filter by facility"></select>
+      <select id="filter-nurse" aria-label="Filter by nurse"></select>
+    </div>
+    <div class="actions">
+      <button class="btn" data-action="select-mode" id="select-btn" title="Select several dates, then add one assignment to all of them">Select days</button>
+      <button class="btn primary" data-action="add">+ Add shift</button>
+      <button class="btn icon" data-action="settings" aria-label="Settings" title="Nurses, facilities and coverage requirements">⚙</button>
+    </div>
+  </header>
+
+  <div id="select-bar" class="select-bar" hidden>
+    <span id="select-count">Click dates to select them.</span>
+    <button class="btn primary" data-action="add-selected">Add shift to selected</button>
+    <button class="btn" data-action="select-clear">Cancel</button>
+  </div>
+
+  <main class="layout">
+    <section id="calendar" class="calendar" aria-live="polite"></section>
+    <aside class="sidebar">
+      <section class="card">
+        <h2>Needs attention <span class="muted small">(next 60 days)</span></h2>
+        <div id="attention"></div>
+      </section>
+      <section class="card legend">
+        <h2>Legend</h2>
+        <div class="legend-row"><span class="chip-sample type-regular">Regular</span> scheduled shift</div>
+        <div class="legend-row"><span class="chip-sample type-coverage">Coverage</span> covering assignment</div>
+        <div class="legend-row"><span class="chip-sample status-unfilled">Unfilled</span> needs a nurse</div>
+        <div class="legend-row"><span class="chip-sample type-regular status-tentative">Tentative</span> not yet confirmed</div>
+        <div class="legend-row"><span class="chip-sample vacated">Released</span> original nurse replaced</div>
+        <div class="legend-row"><span class="req-badge ok">✓ Staffed</span> requirement met</div>
+        <div class="legend-row"><span class="req-badge short">Short</span> requirement not met</div>
+        <p class="muted small">Days without a badge have no staffing requirement — a blank day is not a gap. On small screens these badges appear as colored dots.</p>
+      </section>
+    </aside>
+  </main>
+
+  <div id="drawer-backdrop" class="backdrop" hidden></div>
+  <aside id="drawer" class="drawer" hidden aria-modal="true" role="dialog"></aside>
+  <div id="modal-backdrop" class="backdrop modal-bg" hidden></div>
+  <div id="modal" class="modal" hidden role="alertdialog" aria-modal="true"></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
