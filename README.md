@@ -4,9 +4,10 @@ A nursing schedule and coverage calendar. The calendar is the main workspace: cl
 
 ## Running
 
-Requires Node.js 22.13 or later. There are no npm dependencies: storage uses the built-in `node:sqlite`.
+Requires Node.js 22.13 or later. Locally, data is stored with the built-in `node:sqlite`. The only npm dependency is `pg`, which is used for hosted Postgres.
 
 ```sh
+npm install
 npm start            # http://localhost:3000, data in data/schedule.db
 npm run seed         # optional demo data (only into an empty database)
 npm test             # unit + API tests
@@ -18,8 +19,22 @@ Environment variables:
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `PORT` | `3000` | HTTP port |
+| `DATABASE_URL` or `POSTGRES_URL` | unset | Postgres connection string. When set, it is used instead of SQLite |
 | `DB_FILE` | `data/schedule.db` | SQLite database file |
-| `APP_USER`, `APP_PASSWORD` | unset | When both are set, the app requires HTTP Basic auth |
+| `APP_USER`, `APP_PASSWORD` | unset | When both are set, the app asks for this username and password. Required on Vercel |
+
+## Deploying to Vercel (with Supabase)
+
+1. In Vercel, choose **Add New → Project** and import this GitHub repository. Leave the build settings alone: `vercel.json` supplies them.
+2. In the project's **Storage** tab, create or connect a **Supabase** database. This adds `POSTGRES_URL` and related variables to the project.
+3. In **Settings → Environment Variables**, add `APP_USER` and `APP_PASSWORD`. Anyone with the URL can reach the site, so the app returns an error until both are set.
+4. Redeploy. On the first request the app creates its tables in a separate `nurse_schedule` schema. That schema is not exposed through Supabase's public data API.
+
+Open the deployment URL, sign in with `APP_USER` / `APP_PASSWORD`, and add your facilities and nurses. To load demo data instead, run `POSTGRES_URL=... npm run seed` once from your computer.
+
+How it works: `npm run build` copies `public/` and `shared/` into `dist/`, which Vercel serves as static files. Every `/api/*` request is routed to the single function in `api/index.js`.
+
+To run the tests against Postgres, set `TEST_DATABASE_URL=postgres://...` for `npm test`, or `E2E_DATABASE_URL` for `npm run test:e2e`. Both reset the `nurse_schedule` schema.
 
 ## Features
 
@@ -44,16 +59,17 @@ Environment variables:
 ## Layout
 
 ```
-server/   index.js (HTTP + routing), store.js (operations), db.js (schema)
+server/   index.js (HTTP + routing), store.js (operations), db.js (SQLite/Postgres adapters + schema)
+api/      index.js (Vercel function entry)
 shared/   time.js (dates/timezones), recurrence.js (rules/summary), schedule.js (expansion, coverage, overlaps, requirements)
 public/   index.html, styles.css, app.js (vanilla JS UI)
 test/     node:test suites
-scripts/  seed.js, e2e.js
+scripts/  seed.js, e2e.js, build.js (static build for Vercel)
 ```
 
 ## Limitations
 
-- Built for a single team. Access control is optional HTTP Basic auth; there are no per-user accounts or roles.
+- Built for a single team. Access is one shared username and password (`APP_USER` / `APP_PASSWORD`); there are no per-user accounts or roles. The sign-in lasts for the browser session.
 - An individual occurrence can be moved by at most 31 days.
 - If an entire-series edit changes the weekdays, exceptions on dates that are no longer in the pattern stop applying.
 - The every-other-week phase is anchored to the Sunday-starting week of the series start date.

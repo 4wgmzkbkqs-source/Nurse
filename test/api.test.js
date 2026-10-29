@@ -9,7 +9,7 @@ import { Store } from '../server/store.js';
 import { createApp } from '../server/index.js';
 
 async function start(file) {
-  const db = openDb(file);
+  const db = await openDb(file);
   const server = createServer(createApp(new Store(db)));
   await new Promise((r) => server.listen(0, r));
   const base = `http://127.0.0.1:${server.address().port}`;
@@ -17,7 +17,7 @@ async function start(file) {
     const res = await fetch(base + path, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
     return { status: res.status, body: await res.json() };
   };
-  const stop = () => new Promise((r) => server.close(() => { db.close(); r(); }));
+  const stop = () => new Promise((r) => server.close(r)).then(() => db.close());
   return { call, stop, base };
 }
 

@@ -17,7 +17,15 @@ try { ({ chromium } = require('playwright')); } catch { ({ chromium } = require(
 const shots = process.env.SHOTS_DIR || join(tmpdir(), 'nurse-shots');
 mkdirSync(shots, { recursive: true });
 const dir = mkdtempSync(join(tmpdir(), 'nurse-e2e-'));
-const db = openDb(join(dir, 'e2e.db'));
+// E2E_DATABASE_URL runs the walkthrough on Postgres (its nurse_schedule schema is reset).
+if (process.env.E2E_DATABASE_URL) {
+  const { default: pg } = await import('pg');
+  const c = new pg.Client({ connectionString: process.env.E2E_DATABASE_URL });
+  await c.connect();
+  await c.query('DROP SCHEMA IF EXISTS nurse_schedule CASCADE');
+  await c.end();
+}
+const db = await openDb(process.env.E2E_DATABASE_URL || join(dir, 'e2e.db'));
 const server = createServer(createApp(new Store(db)));
 await new Promise((r) => server.listen(0, r));
 const url = `http://127.0.0.1:${server.address().port}/`;
@@ -216,6 +224,6 @@ try {
 } finally {
   await browser.close();
   server.close();
-  db.close();
+  await db.close();
   rmSync(dir, { recursive: true, force: true });
 }

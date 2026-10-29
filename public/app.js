@@ -51,15 +51,55 @@ class ApiError extends Error {
   constructor(status, data) { super(data.error || `Request failed (${status})`); this.status = status; this.data = data; }
 }
 
+// Credentials for deployments protected by APP_USER / APP_PASSWORD. Kept
+// for the browser session only.
+const auth = {
+  get() { try { return sessionStorage.getItem('ns.auth'); } catch { return null; } },
+  set(v) { try { if (v) sessionStorage.setItem('ns.auth', v); else sessionStorage.removeItem('ns.auth'); } catch { /* unavailable */ } },
+};
+
 async function api(method, path, body) {
-  const res = await fetch(path, {
-    method,
-    headers: body ? { 'Content-Type': 'application/json' } : {},
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const headers = body ? { 'Content-Type': 'application/json' } : {};
+  const token = auth.get();
+  if (token) headers.Authorization = `Basic ${token}`;
+  const res = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
   const data = await res.json().catch(() => ({}));
+  if (res.status === 401 && data.code === 'auth_required') {
+    // Ask for credentials, then retry the same request once signed in.
+    await signIn(token ? 'That username or password was not accepted.' : '');
+    return api(method, path, body);
+  }
   if (!res.ok) throw new ApiError(res.status, data);
   return data;
+}
+
+let signInPromise = null;
+function signIn(message) {
+  if (signInPromise) return signInPromise;
+  auth.set(null);
+  signInPromise = new Promise((resolve) => {
+    const m = $('#modal');
+    m.innerHTML = `<h3>Sign in</h3>
+      <form id="signin-form" novalidate>
+        ${message ? `<div class="error">${esc(message)}</div>` : ''}
+        <div class="field"><label for="si-user">Username</label><input type="text" id="si-user" autocomplete="username" style="width:100%"></div>
+        <div class="field"><label for="si-pass">Password</label><input type="password" id="si-pass" autocomplete="current-password" style="width:100%"></div>
+        <div class="row-end"><button class="btn primary">Sign in</button></div>
+      </form>`;
+    m.hidden = false;
+    $('#modal-backdrop').hidden = false;
+    $('#si-user').focus();
+    $('#signin-form').addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const bytes = new TextEncoder().encode(`${$('#si-user').value}:${$('#si-pass').value}`);
+      auth.set(btoa(String.fromCharCode(...bytes)));
+      m.hidden = true;
+      $('#modal-backdrop').hidden = true;
+      signInPromise = null;
+      resolve();
+    });
+  });
+  return signInPromise;
 }
 
 // Run a save; on an overlap (409) ask for confirmation and retry with force.
@@ -1069,6 +1109,7 @@ function onDateClick(date) {
 
 document.addEventListener('click', (ev) => {
   if (!$('#modal').hidden) {
+    if (signInPromise) return;
     const c = ev.target.closest('[data-choice]');
     if (c && modalResolve) modalResolve(Number(c.dataset.choice));
     else if (ev.target.id === 'modal-backdrop' && modalResolve) modalResolve(null);
@@ -1112,6 +1153,7 @@ document.addEventListener('click', (ev) => {
 
 document.addEventListener('keydown', (ev) => {
   if (ev.key === 'Escape') {
+    if (signInPromise) return;
     if (!$('#modal').hidden && modalResolve) modalResolve(null);
     else if (!$('#drawer').hidden) closeDrawer();
     else if (S.selecting) { clearSelection(); render(); }
